@@ -1,0 +1,21 @@
+listen: 127.0.0.1:9002
+
+asterisk:
+    addr: 127.0.0.1:5038
+    user: admin
+    password: admin
+
+api:
+    # Default originate data params
+    originate_data:
+        outgoing_context: autodial
+        exten: s
+        context: autodial_answer
+        priority: 1
+        # application: Dial
+        # data: SIP/100
+        timeout: 30000
+        # caller_id: 000 <000>
+        # variable: EXAMPLE_VAR=example
+        # account: test_account
+        # codecs: alaw,ulaw

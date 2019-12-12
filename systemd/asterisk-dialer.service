@@ -1,0 +1,21 @@
+[Unit]
+Description=Asterisk Dialer
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+; PermissionsStartOnly=yes
+Environment=HOME=/opt/asterisk-dialer
+WorkingDirectory=/opt/asterisk-dialer
+; ExecStartPre=
+ExecStart=/opt/asterisk-dialer/asterisk-dialer -config=/opt/asterisk-dialer/config/config.yml
+; ExecStop=
+; ExecReload=
+Restart=always
+RestartSec=5
+StartLimitInterval=500
+StartLimitBurst=100
+
+[Install]
+WantedBy=multi-user.target
