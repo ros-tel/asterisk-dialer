@@ -1,5 +1,5 @@
 config/config.yml
 
-asterisk-dialer
+/asterisk-dialer
 
 go.sum

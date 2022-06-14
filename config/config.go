@@ -9,6 +9,7 @@ import (
 type (
 	Api struct {
 		OriginateData OriginateData `yaml:"originate_data"`
+		AmoCrm        AmoCrm        `yaml:"amocrm"`
 		Template      *template.Template
 	}
 
@@ -24,6 +25,11 @@ type (
 		Variable        string `yaml:"variable"`
 		Account         string `yaml:"account"`
 		Codecs          string `yaml:"codecs"`
+	}
+
+	AmoCrm struct {
+		Login    string `yaml:"login"`
+		Password string `yaml:"password"`
 	}
 )
 

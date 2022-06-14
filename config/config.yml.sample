@@ -19,3 +19,6 @@ api:
         # variable: EXAMPLE_VAR=example
         # account: test_account
         # codecs: alaw,ulaw
+    amocrm:
+        login: login
+        password: SeCrEt
