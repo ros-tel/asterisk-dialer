@@ -3,6 +3,7 @@ package originate
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"asterisk-dialer/config"
 
@@ -70,6 +71,8 @@ func AmoCrm(c *gin.Context) {
 			response.Data = res.Get("Message")
 		}
 	case "call":
+		r.To = cleanNumber(r.To)
+
 		if r.To != "" && r.From != "" {
 			originate_data := ami.OriginateData{
 				Channel:  "Local/" + r.From + "@" + cnf.OriginateData.OutgoingContext,
@@ -114,4 +117,13 @@ func AmoCrm(c *gin.Context) {
 		http.StatusOK,
 		response,
 	)
+}
+
+func cleanNumber(num string) string {
+	num = strings.ReplaceAll(num, "(", "")
+	num = strings.ReplaceAll(num, ")", "")
+	num = strings.ReplaceAll(num, "-", "")
+	num = strings.ReplaceAll(num, " ", "")
+
+	return num
 }
