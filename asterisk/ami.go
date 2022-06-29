@@ -2,6 +2,7 @@ package asterisk
 
 import (
 	"log"
+	"time"
 
 	"github.com/heltonmarx/goami/ami"
 )
@@ -19,19 +20,45 @@ func Connect(c Ami) *ami.Socket {
 	if err != nil {
 		log.Fatalf("socket error: %v\n", err)
 	}
-	if _, err := ami.Connect(socket); err != nil {
+
+	_, err = ami.Connect(socket)
+	if err != nil {
 		log.Fatalf("connect error: %v\n", err)
 	}
 
 	//Login
 	uuid, err := ami.GetUUID()
 	if err != nil {
-		log.Fatalf("Get UUID: %v\n", err)
+		log.Fatalf("[FATAL] ami.GetUUID: %v\n", err)
 	}
-	if err := ami.Login(socket, c.Username, c.Password, "Off", uuid); err != nil {
-		log.Fatalf("login error: %v\n", err)
+
+	err = ami.Login(socket, c.Username, c.Password, "Off", uuid)
+	if err != nil {
+		log.Fatalf("[FATAL] ami.Login: %v\n", err)
 	}
+
+	go amiHeartbeat(socket)
+
 	log.Printf("login ok!\n")
 
 	return socket
+}
+
+// Раз в минуту проверяем что подключение живо
+func amiHeartbeat(socket *ami.Socket) {
+	ticker := time.NewTicker(time.Minute)
+
+	for {
+		<-ticker.C
+
+		uuid, err := ami.GetUUID()
+		if err != nil {
+			log.Fatalf("[FATAL] ami.GetUUID: %v\n", err)
+		}
+
+		err = ami.Ping(socket, uuid)
+		if err != nil {
+			log.Fatalf("[FATAL] ami.Ping: %v\n", err)
+		}
+	}
 }
