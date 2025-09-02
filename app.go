@@ -1,11 +1,13 @@
 package main
 
 import (
-	"asterisk-dialer/asterisk"
-	"asterisk-dialer/config"
 	"flag"
 	"log"
 	"os"
+
+	"asterisk-dialer/api"
+	"asterisk-dialer/asterisk"
+	"asterisk-dialer/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,9 +38,12 @@ func main() {
 	ami := asterisk.Connect(cnf.Asterisk)
 
 	r := gin.Default()
-	r.Use(injectAmi(ami), config.Inject(cnf.Config))
+	r.Use(
+		asterisk.Inject(ami),
+		config.Inject(cnf.Config),
+	)
 
-	initRoutes(r)
+	api.InitRoutes(r)
 
 	r.Run(cnf.Listen)
 }

@@ -15,7 +15,7 @@ import (
 )
 
 type (
-	OriginateRequest struct {
+	originateRequest struct {
 		Phone    string `form:"phone"`
 		Template string `form:"template"`
 
@@ -36,7 +36,7 @@ type (
 		Num []string `form:"num"`
 	}
 
-	OriginateResponse struct {
+	originateResponse struct {
 		ActionID string `json:"action_id"`
 		Message  string `json:"message"`
 		Response string `json:"response"`
@@ -60,7 +60,7 @@ func Originate(c *gin.Context) {
 	ami_socket := c.MustGet("ami").(*ami.Socket)
 	cnf := c.MustGet("cnf").(*config.Api)
 
-	var r OriginateRequest
+	var r originateRequest
 	if err := c.Bind(&r); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -87,7 +87,6 @@ func Originate(c *gin.Context) {
 		Data:        cnf.OriginateData.Data,
 		Timeout:     cnf.OriginateData.Timeout,
 		CallerID:    cnf.OriginateData.CallerID,
-		Variable:    "FOO=1",
 		Account:     cnf.OriginateData.Account,
 		Codecs:      cnf.OriginateData.Codecs,
 		Async:       "true",
@@ -124,13 +123,13 @@ func Originate(c *gin.Context) {
 	}
 
 	if r.Phone != "" {
-		originate_data.Variable += ",PHONE=" + r.Phone
+		originate_data.Variable = append(originate_data.Variable, "PHONE="+r.Phone)
 	}
 	if r.Oid != "" {
-		originate_data.Variable += ",OID=" + r.Oid
+		originate_data.Variable = append(originate_data.Variable, "OID="+r.Oid)
 	}
 	if cnf.OriginateData.Variable != "" {
-		originate_data.Variable += "," + cnf.OriginateData.Variable
+		originate_data.Variable = append(originate_data.Variable, strings.Split(cnf.OriginateData.Variable, ",")...)
 	}
 
 	if r.Template != "" && (len(r.Raw) > 0 || len(r.Num) > 0) {
@@ -189,12 +188,12 @@ func Originate(c *gin.Context) {
 			}
 		}
 		sound = strings.Replace(sound, "&amp;", "&", -1)
-		originate_data.Variable += "," + "SOUND=" + strings.TrimSpace(sound)
+		originate_data.Variable = append(originate_data.Variable, "SOUND="+strings.TrimSpace(sound))
 	}
 
 	log.Printf("%+v", originate_data)
 
-	originate, err := ami.Originate(ami_socket, uuid, originate_data)
+	originate, err := ami.Originate(c, ami_socket, uuid, originate_data)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
@@ -207,7 +206,7 @@ func Originate(c *gin.Context) {
 	if response != "Success" {
 		code = http.StatusInternalServerError
 	}
-	c.JSON(code, OriginateResponse{
+	c.JSON(code, originateResponse{
 		ActionID: originate.Get("ActionID"),
 		Message:  originate.Get("Message"),
 		Response: response,

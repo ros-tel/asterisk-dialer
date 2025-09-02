@@ -1,4 +1,4 @@
-package originate
+package amocrm
 
 import (
 	"log"
@@ -12,7 +12,7 @@ import (
 )
 
 type (
-	AmoCrmRequest struct {
+	amoCrmRequest struct {
 		Login  string `form:"_login" binding:"required"`
 		Secret string `form:"_secret" binding:"required"`
 		Action string `form:"_action" binding:"required"`
@@ -24,7 +24,7 @@ type (
 		Oid string `form:"rand"`
 	}
 
-	AmoCrmResponse struct {
+	amoCrmResponse struct {
 		Status string `json:"status"`
 		Action string `json:"action"`
 		Data   string `json:"data"`
@@ -36,7 +36,7 @@ func AmoCrm(c *gin.Context) {
 	ami_socket := c.MustGet("ami").(*ami.Socket)
 	cnf := c.MustGet("cnf").(*config.Api)
 
-	var r AmoCrmRequest
+	var r amoCrmRequest
 	if err := c.Bind(&r); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -55,12 +55,12 @@ func AmoCrm(c *gin.Context) {
 	}
 
 	var res ami.Response
-	response := AmoCrmResponse{
+	response := amoCrmResponse{
 		Status: "error",
 	}
 	switch r.Action {
 	case "status":
-		res, err = ami.Status(ami_socket, uuid, "", "")
+		res, err = ami.CoreStatus(c, ami_socket, uuid)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return
@@ -68,7 +68,7 @@ func AmoCrm(c *gin.Context) {
 
 		if res.Get("Response") == "Success" {
 			response.Status = "ok"
-			response.Data = res.Get("Message")
+			response.Data = "CurrentCalls " + res.Get("CoreCurrentCalls")
 		}
 	case "call":
 		r.To = cleanNumber(r.To)
@@ -81,24 +81,23 @@ func AmoCrm(c *gin.Context) {
 				Priority: 1,
 				Timeout:  cnf.OriginateData.Timeout,
 				CallerID: `"` + r.CallerName + ` ` + r.To + `" <` + r.From + `>`,
-				Variable: "FOO=1",
 				Account:  cnf.OriginateData.Account,
 				Codecs:   cnf.OriginateData.Codecs,
 				Async:    "true",
 			}
 
-			originate_data.Variable += ",PHONE=" + r.To
+			originate_data.Variable = append(originate_data.Variable, "PHONE="+r.To)
 
 			if r.Oid != "" {
-				originate_data.Variable += ",OID=" + r.Oid
+				originate_data.Variable = append(originate_data.Variable, "OID="+r.Oid)
 			}
 			if cnf.OriginateData.Variable != "" {
-				originate_data.Variable += "," + cnf.OriginateData.Variable
+				originate_data.Variable = append(originate_data.Variable, strings.Split(cnf.OriginateData.Variable, ",")...)
 			}
 
 			log.Printf("%+v", originate_data)
 
-			res, err = ami.Originate(ami_socket, uuid, originate_data)
+			res, err = ami.Originate(c, ami_socket, uuid, originate_data)
 			if err != nil {
 				c.Status(http.StatusInternalServerError)
 				return

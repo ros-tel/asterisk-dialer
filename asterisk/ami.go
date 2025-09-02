@@ -1,6 +1,7 @@
 package asterisk
 
 import (
+	"context"
 	"log"
 	"time"
 
@@ -16,12 +17,15 @@ type (
 )
 
 func Connect(c Ami) *ami.Socket {
-	socket, err := ami.NewSocket(c.Addr)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	socket, err := ami.NewSocket(ctx, c.Addr)
 	if err != nil {
 		log.Fatalf("socket error: %v\n", err)
 	}
 
-	_, err = ami.Connect(socket)
+	_, err = ami.Connect(ctx, socket)
 	if err != nil {
 		log.Fatalf("connect error: %v\n", err)
 	}
@@ -32,7 +36,7 @@ func Connect(c Ami) *ami.Socket {
 		log.Fatalf("[FATAL] ami.GetUUID: %v\n", err)
 	}
 
-	err = ami.Login(socket, c.Username, c.Password, "Off", uuid)
+	err = ami.Login(ctx, socket, c.Username, c.Password, "Off", uuid)
 	if err != nil {
 		log.Fatalf("[FATAL] ami.Login: %v\n", err)
 	}
@@ -46,7 +50,7 @@ func Connect(c Ami) *ami.Socket {
 
 // Раз в минуту проверяем что подключение живо
 func amiHeartbeat(socket *ami.Socket) {
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(30 * time.Second)
 
 	for {
 		<-ticker.C
@@ -56,9 +60,11 @@ func amiHeartbeat(socket *ami.Socket) {
 			log.Fatalf("[FATAL] ami.GetUUID: %v\n", err)
 		}
 
-		err = ami.Ping(socket, uuid)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		err = ami.Ping(ctx, socket, uuid)
 		if err != nil {
 			log.Fatalf("[FATAL] ami.Ping: %v\n", err)
 		}
+		cancel()
 	}
 }

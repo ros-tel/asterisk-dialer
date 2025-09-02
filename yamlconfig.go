@@ -2,7 +2,6 @@ package main
 
 import (
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -26,7 +25,7 @@ func configLoad(configFile string, p Parser) {
 	}
 
 	// Read the config file
-	yamlBytes, err := ioutil.ReadAll(input)
+	yamlBytes, err := io.ReadAll(input)
 	input.Close()
 	if err != nil {
 		log.Fatalln(err)
